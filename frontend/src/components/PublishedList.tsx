@@ -3,9 +3,10 @@ import { CheckCircle, Calendar, Eye, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { PhonePreview } from './PhonePreview';
 
 export function PublishedList() {
-  const { papers, selectPaper, setActiveTab } = useStore();
+  const { papers, selectPaper, selectedPaper } = useStore();
   
   const publishedPapers = papers.filter(p => p.publish?.status === 'published');
 
@@ -23,6 +24,8 @@ export function PublishedList() {
     );
   }
 
+  const selectedPreview = selectedPaper?.publish?.status === 'published' ? selectedPaper : null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
@@ -32,74 +35,83 @@ export function PublishedList() {
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {publishedPapers.map((paper, index) => (
-          <motion.div
-            key={paper.raw.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="xhs-card p-5"
-          >
-            {/* 顶部状态 */}
-            <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
-                <CheckCircle className="w-4 h-4" />
-                已发布
-              </span>
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {paper.publish?.published_at && format(
-                  new Date(paper.publish.published_at),
-                  'yyyy年MM月dd日 HH:mm',
-                  { locale: zhCN }
-                )}
-              </span>
-            </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-4 md:grid-cols-2">
+          {publishedPapers.map((paper, index) => (
+            <motion.div
+              key={paper.raw.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="xhs-card p-5"
+            >
+              {/* 顶部状态 */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
+                  <CheckCircle className="w-4 h-4" />
+                  已发布
+                </span>
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {paper.publish?.published_at && format(
+                    new Date(paper.publish.published_at),
+                    'yyyy年MM月dd日 HH:mm',
+                    { locale: zhCN }
+                  )}
+                </span>
+              </div>
 
-            {/* 小红书标题 */}
-            <h4 className="font-bold text-base text-gray-800 mb-2 line-clamp-2">
-              {paper.xhs?.title}
-            </h4>
+              {/* 小红书标题 */}
+              <h4 className="font-bold text-base text-gray-800 mb-2 line-clamp-2">
+                {paper.xhs?.title}
+              </h4>
 
-            {/* 原始论文标题 */}
-            <p className="text-sm text-gray-500 mb-3 line-clamp-1">
-              原文: {paper.raw.paper_title}
-            </p>
+              {/* 原始论文标题 */}
+              <p className="text-sm text-gray-500 mb-3 line-clamp-1">
+                原文: {paper.raw.paper_title}
+              </p>
 
-            {/* 标签 */}
-            <div className="flex flex-wrap gap-1 mb-4">
-              {paper.xhs?.tags.slice(0, 3).map((tag, i) => (
-                <span key={i} className="xhs-tag text-xs">#{tag}</span>
-              ))}
-            </div>
+              {/* 标签 */}
+              <div className="flex flex-wrap gap-1 mb-4">
+                {paper.xhs?.tags.slice(0, 3).map((tag, i) => (
+                  <span key={i} className="xhs-tag text-xs">#{tag}</span>
+                ))}
+              </div>
 
-            {/* 操作按钮 */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  selectPaper(paper);
-                  setActiveTab('preview');
-                }}
-                className="xhs-btn-secondary text-xs py-1.5 px-3 flex items-center gap-1 flex-1 justify-center"
-              >
-                <Eye className="w-3 h-3" />
-                查看内容
-              </button>
-              {paper.raw.paper_url && (
-                <a
-                  href={paper.raw.paper_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="xhs-btn-secondary text-xs py-1.5 px-3 flex items-center gap-1"
+              {/* 操作按钮 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => selectPaper(paper)}
+                  className="xhs-btn-secondary text-xs py-1.5 px-3 flex items-center gap-1 flex-1 justify-center"
                 >
-                  <ExternalLink className="w-3 h-3" />
-                  原文
-                </a>
-              )}
+                  <Eye className="w-3 h-3" />
+                  查看内容
+                </button>
+                {paper.raw.paper_url && (
+                  <a
+                    href={paper.raw.paper_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="xhs-btn-secondary text-xs py-1.5 px-3 flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    原文
+                  </a>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="flex justify-center">
+          {selectedPreview?.xhs ? (
+            <PhonePreview xhs={selectedPreview.xhs} />
+          ) : (
+            <div className="xhs-card p-6 w-full h-full flex items-center justify-center text-sm text-gray-400 text-center">
+              选择一条发布记录查看内容展示
             </div>
-          </motion.div>
-        ))}
+          )}
+        </div>
       </div>
     </div>
   );
