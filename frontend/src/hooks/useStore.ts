@@ -51,15 +51,19 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   fetchPapers: async () => {
-    set({ isFetching: true, error: null });
+    set({ isFetching: true, error: null, papers: [], selectedPaper: null });
     const result = await fetchNewPapers({
       minLikes: 100,
       keywords: ['arxiv', 'paper', 'AI', 'LLM', 'GPT', 'machine learning'],
       maxResults: 20,
     });
     if (result.success) {
-      // 重新加载论文列表
-      await get().loadPapers();
+      const newPapers = (result.data ?? []).map((paper) => ({
+        raw: paper,
+        xhs: undefined,
+        publish: undefined,
+      }));
+      set({ papers: newPapers });
     } else {
       set({ error: result.error || '抓取失败' });
     }

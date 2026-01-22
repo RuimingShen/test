@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useStore } from '../hooks/useStore';
-import type { XHSContent } from '../types';
 import { 
-  Wand2, 
-  Send, 
-  Edit3, 
-  Save, 
-  X, 
+  Wand2,
+  Send,
+  Edit3,
+  Save,
+  X,
   Heart, 
   MessageCircle, 
   Star,
@@ -244,7 +243,7 @@ function PhoneMockup({ xhs }: { xhs: XHSContent }) {
       className="relative"
     >
       {/* 手机外框 */}
-      <div className="w-[300px] h-[620px] bg-gray-900 rounded-[40px] p-3 shadow-2xl">
+      <div className="w-[360px] h-[760px] bg-gray-900 rounded-[44px] p-3 shadow-2xl">
         {/* 刘海 */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-gray-900 rounded-b-2xl z-10"></div>
         
