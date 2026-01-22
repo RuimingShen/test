@@ -1,13 +1,11 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
 
+// 使用 TwitterAPI.io 抓取热门 AI 论文
+// 文档: https://docs.twitterapi.io/
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Twitter API 配置 - 需要在 Supabase Secrets 中设置
-const TWITTER_BEARER_TOKEN = Deno.env.get("TWITTER_BEARER_TOKEN") || "";
-const TWITTER_CONSUMER_KEY = Deno.env.get("TWITTER_CONSUMER_KEY") || "";
-const TWITTER_CONSUMER_SECRET = Deno.env.get("TWITTER_CONSUMER_SECRET") || "";
+// TwitterAPI.io 配置 - 需要在 Supabase Secrets 中设置
+const TWITTERAPI_IO_KEY = Deno.env.get("TWITTERAPI_IO_KEY") || "";
 
 // Supabase 配置
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -25,69 +23,53 @@ interface FetchParams {
   maxResults: number;
 }
 
-interface TwitterTweet {
+interface TwitterAPITweet {
   id: string;
   text: string;
-  author_id: string;
-  created_at: string;
-  public_metrics: {
-    like_count: number;
-    retweet_count: number;
-    reply_count: number;
-    quote_count: number;
+  url: string;
+  likeCount: number;
+  retweetCount: number;
+  replyCount: number;
+  createdAt: string;
+  author: {
+    id: string;
+    name: string;
+    userName: string;
   };
   entities?: {
     urls?: Array<{
-      expanded_url: string;
-      display_url: string;
+      url: string;
+      expandedUrl: string;
+      displayUrl: string;
     }>;
   };
 }
 
-interface TwitterUser {
-  id: string;
-  name: string;
-  username: string;
-}
-
-// 构建 Twitter 搜索查询
-function buildSearchQuery(keywords: string[], minLikes: number): string {
-  // 搜索包含 AI 论文相关关键词的推文
-  // 使用高级搜索语法：(关键词1 OR 关键词2) min_faves:100
-  const keywordQuery = keywords.map((k) => k).join(" OR ");
-  return `(${keywordQuery}) min_faves:${minLikes} -is:retweet lang:en`;
-}
-
 // 从推文中提取论文信息
-function extractPaperInfo(tweet: TwitterTweet): {
+function extractPaperInfo(tweet: TwitterAPITweet): {
   title?: string;
   url?: string;
-  abstract?: string;
 } {
-  const urls = tweet.entities?.urls || [];
+  // 从推文文本中查找 URL
+  const text = tweet.text;
   
   // 查找 arXiv 链接
-  const arxivUrl = urls.find(
-    (u) => u.expanded_url?.includes("arxiv.org")
-  );
+  const arxivMatch = text.match(/https?:\/\/arxiv\.org\/abs\/[\d.]+/);
+  const arxivUrl = arxivMatch?.[0];
   
-  // 查找其他论文链接（如 OpenReview, Papers with Code 等）
-  const paperUrl = arxivUrl || urls.find(
-    (u) =>
-      u.expanded_url?.includes("openreview.net") ||
-      u.expanded_url?.includes("paperswithcode.com") ||
-      u.expanded_url?.includes("huggingface.co/papers")
-  );
+  // 查找其他论文链接
+  const paperUrlMatch = text.match(/https?:\/\/(openreview\.net|paperswithcode\.com|huggingface\.co\/papers)[^\s]*/);
+  const paperUrl = arxivUrl || paperUrlMatch?.[0];
 
-  // 尝试从推文中提取标题（通常在引号中或冒号后）
-  const titleMatch = tweet.text.match(/"([^"]+)"/) || 
-                     tweet.text.match(/📄\s*(.+?)(?:\n|$)/) ||
-                     tweet.text.match(/Paper:\s*(.+?)(?:\n|$)/i);
+  // 尝试从推文中提取标题（通常在引号中）
+  const titleMatch = text.match(/"([^"]+)"/) || 
+                     text.match(/📄\s*(.+?)(?:\n|$)/) ||
+                     text.match(/Paper:\s*(.+?)(?:\n|$)/i) ||
+                     text.match(/🚀\s*(.+?)(?:\n|https|$)/i);
 
   return {
-    title: titleMatch?.[1]?.trim(),
-    url: paperUrl?.expanded_url,
-    abstract: undefined, // 需要单独抓取
+    title: titleMatch?.[1]?.trim().slice(0, 200),
+    url: paperUrl,
   };
 }
 
@@ -99,8 +81,8 @@ serve(async (req) => {
 
   try {
     // 检查 API 配置
-    if (!TWITTER_BEARER_TOKEN) {
-      throw new Error("Twitter API credentials not configured");
+    if (!TWITTERAPI_IO_KEY) {
+      throw new Error("TwitterAPI.io API key not configured. Please set TWITTERAPI_IO_KEY in Supabase Secrets.");
     }
 
     // 解析请求参数
@@ -108,65 +90,64 @@ serve(async (req) => {
     const { minLikes = 100, keywords = ["arxiv", "paper", "AI"], maxResults = 20 } = params;
 
     // 构建搜索查询
-    const query = buildSearchQuery(keywords, minLikes);
+    // TwitterAPI.io 支持高级搜索语法，包括 min_faves
+    const query = `(${keywords.join(" OR ")}) min_faves:${minLikes} -is:retweet lang:en`;
     console.log("Search query:", query);
 
-    // 调用 Twitter API v2
-    const searchUrl = new URL("https://api.twitter.com/2/tweets/search/recent");
+    // 调用 TwitterAPI.io
+    const searchUrl = new URL("https://api.twitterapi.io/twitter/tweet/advanced_search");
     searchUrl.searchParams.set("query", query);
-    searchUrl.searchParams.set("max_results", String(Math.min(maxResults, 100)));
-    searchUrl.searchParams.set(
-      "tweet.fields",
-      "author_id,created_at,public_metrics,entities"
-    );
-    searchUrl.searchParams.set("expansions", "author_id");
-    searchUrl.searchParams.set("user.fields", "name,username");
+    searchUrl.searchParams.set("queryType", "Latest");
+
+    console.log("Fetching from TwitterAPI.io:", searchUrl.toString());
 
     const response = await fetch(searchUrl.toString(), {
+      method: "GET",
       headers: {
-        Authorization: `Bearer ${TWITTER_BEARER_TOKEN}`,
+        "X-API-Key": TWITTERAPI_IO_KEY,
       },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Twitter API error:", errorText);
-      throw new Error(`Twitter API error: ${response.status}`);
+      console.error("TwitterAPI.io error:", errorText);
+      throw new Error(`TwitterAPI.io error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Twitter API response:", JSON.stringify(data, null, 2));
+    console.log("TwitterAPI.io response:", JSON.stringify(data, null, 2));
 
     // 解析结果
-    const tweets: TwitterTweet[] = data.data || [];
-    const users: TwitterUser[] = data.includes?.users || [];
-
-    // 创建用户映射
-    const userMap = new Map<string, TwitterUser>();
-    users.forEach((user) => userMap.set(user.id, user));
+    const tweets: TwitterAPITweet[] = data.tweets || [];
 
     // 初始化 Supabase 客户端
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 处理并存储论文
+    // 处理并存储论文（只取 maxResults 条）
     const papers = [];
-    for (const tweet of tweets) {
-      const author = userMap.get(tweet.author_id);
+    const tweetsToProcess = tweets.slice(0, maxResults);
+
+    for (const tweet of tweetsToProcess) {
+      // 再次过滤确保点赞数符合要求
+      if (tweet.likeCount < minLikes) {
+        continue;
+      }
+
       const paperInfo = extractPaperInfo(tweet);
 
       const paper = {
         tweet_id: tweet.id,
         tweet_text: tweet.text,
-        tweet_url: `https://twitter.com/${author?.username}/status/${tweet.id}`,
-        author_name: author?.name || "Unknown",
-        author_username: author?.username || "unknown",
-        like_count: tweet.public_metrics.like_count,
-        retweet_count: tweet.public_metrics.retweet_count,
-        reply_count: tweet.public_metrics.reply_count,
+        tweet_url: tweet.url || `https://twitter.com/${tweet.author?.userName}/status/${tweet.id}`,
+        author_name: tweet.author?.name || "Unknown",
+        author_username: tweet.author?.userName || "unknown",
+        like_count: tweet.likeCount,
+        retweet_count: tweet.retweetCount,
+        reply_count: tweet.replyCount,
         paper_title: paperInfo.title,
         paper_url: paperInfo.url,
-        paper_abstract: paperInfo.abstract,
-        created_at: tweet.created_at,
+        paper_abstract: null,
+        created_at: tweet.createdAt,
         fetched_at: new Date().toISOString(),
       };
 
