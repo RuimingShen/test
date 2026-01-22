@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../hooks/useStore';
+import type { XHSContent } from '../types';
 import { 
   Wand2, 
   Send, 
@@ -233,7 +234,7 @@ export function XHSPreview() {
 }
 
 // 手机模拟器组件
-function PhoneMockup({ xhs }: { xhs: NonNullable<ReturnType<typeof useStore>['selectedPaper']>['xhs'] }) {
+function PhoneMockup({ xhs }: { xhs: XHSContent }) {
   if (!xhs) return null;
   
   return (
