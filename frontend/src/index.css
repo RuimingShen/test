@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --xhs-red: #ff2442;
+  --xhs-pink: #ff6b81;
+  --xhs-light: #fff5f5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #fef7f7 0%, #fff5f8 50%, #f0f4ff 100%);
+  min-height: 100vh;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ff6b81;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff2442;
+}
+
+/* 小红书风格卡片 */
+.xhs-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(255, 36, 66, 0.08);
+  transition: all 0.3s ease;
+}
+
+.xhs-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(255, 36, 66, 0.15);
+}
+
+/* 渐变按钮 */
+.xhs-btn {
+  background: linear-gradient(135deg, #ff2442 0%, #ff6b81 100%);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 12px 28px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 36, 66, 0.3);
+}
+
+.xhs-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 36, 66, 0.4);
+}
+
+.xhs-btn:active {
+  transform: translateY(0);
+}
+
+.xhs-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 次要按钮 */
+.xhs-btn-secondary {
+  background: white;
+  color: #ff2442;
+  border: 2px solid #ff2442;
+  border-radius: 24px;
+  padding: 10px 26px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.xhs-btn-secondary:hover {
+  background: #fff5f5;
+}
+
+/* 输入框 */
+.xhs-input {
+  border: 2px solid #eee;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.xhs-input:focus {
+  outline: none;
+  border-color: #ff6b81;
+  box-shadow: 0 0 0 3px rgba(255, 107, 129, 0.1);
+}
+
+/* 标签 */
+.xhs-tag {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe8ec 100%);
+  color: #ff2442;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 状态指示器 */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.status-dot.draft {
+  background: #fbbf24;
+}
+
+.status-dot.published {
+  background: #22c55e;
+}
+
+.status-dot.failed {
+  background: #ef4444;
+}
+
+/* 加载动画 */
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #fff5f5;
+  border-top-color: #ff2442;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 内容预览区域 */
+.preview-content {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  color: #333;
+}
+
+.preview-content p {
+  margin-bottom: 12px;
+}
+
+/* 标签高亮 */
+.highlight-tag {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+/* 弹窗遮罩 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .xhs-card {
+    border-radius: 12px;
+  }
+  
+  .xhs-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
