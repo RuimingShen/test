@@ -46,31 +46,26 @@ interface TwitterAPITweet {
 }
 
 // 从推文中提取论文信息
-function extractPaperInfo(tweet: TwitterAPITweet): {
-  title?: string;
-  url?: string;
-} {
-  // 从推文文本中查找 URL
-  const text = tweet.text;
-  
-  // 查找 arXiv 链接
-  const arxivMatch = text.match(/https?:\/\/arxiv\.org\/abs\/[\d.]+/);
-  const arxivUrl = arxivMatch?.[0];
-  
-  // 查找其他论文链接
-  const paperUrlMatch = text.match(/https?:\/\/(openreview\.net|paperswithcode\.com|huggingface\.co\/papers)[^\s]*/);
-  const paperUrl = arxivUrl || paperUrlMatch?.[0];
+function extractPaperInfo(tweet: TwitterAPITweet): { title?: string; url?: string } {
+  const text = tweet.text || "";
 
-  // 尝试从推文中提取标题（通常在引号中）
-  const titleMatch = text.match(/"([^"]+)"/) || 
-                     text.match(/📄\s*(.+?)(?:\n|$)/) ||
-                     text.match(/Paper:\s*(.+?)(?:\n|$)/i) ||
-                     text.match(/🚀\s*(.+?)(?:\n|https|$)/i);
+  const expandedUrls =
+    tweet.entities?.urls?.map(u => u.expandedUrl).filter(Boolean) ?? [];
 
-  return {
-    title: titleMatch?.[1]?.trim().slice(0, 200),
-    url: paperUrl,
-  };
+  const paperUrl =
+    expandedUrls.find(u =>
+      /https?:\/\/(arxiv\.org\/(abs|pdf)\/|openreview\.net\/|paperswithcode\.com\/|huggingface\.co\/papers|aclanthology\.org\/|doi\.org\/|semanticscholar\.org\/paper)/i.test(u)
+    ) ||
+    (text.match(/https?:\/\/arxiv\.org\/(abs|pdf)\/[\w.\-\/]+/i)?.[0]) ||
+    (text.match(/https?:\/\/(openreview\.net|paperswithcode\.com|huggingface\.co\/papers|aclanthology\.org|doi\.org|semanticscholar\.org\/paper)[^\s]*/i)?.[0]);
+
+  const titleMatch =
+    text.match(/"([^"]+)"/) ||
+    text.match(/📄\s*(.+?)(?:\n|$)/) ||
+    text.match(/Paper:\s*(.+?)(?:\n|$)/i) ||
+    text.match(/🚀\s*(.+?)(?:\n|https|$)/i);
+
+  return { title: titleMatch?.[1]?.trim().slice(0, 200), url: paperUrl };
 }
 
 serve(async (req) => {
